@@ -1,4 +1,5 @@
 import { $ } from "@wdio/globals";
+import Config from "../../utils/config";
 
 class JoinFanzone {
   public get homeTab() {
@@ -7,7 +8,7 @@ class JoinFanzone {
     );
   }
   public get btnPopup() {
-    return $('android=new UiSelector().className("android.widget.Button")');
+    return 'android=new UiSelector().className("android.widget.Button")';
   }
   public get btnSearch() {
     return $(
@@ -27,13 +28,19 @@ class JoinFanzone {
       'android=new UiSelector().resourceId("com.dazn:id/header_background")'
     );
   }
+  public get btnWelcomeBonus() {
+    return 'android=new UiSelector().resourceId("com.dazn:id/welcome_bonus_collect_button")';
+  }
+  public get btnChooseTeamClose() {
+    return 'android=new UiSelector().resourceId("com.dazn:id/choose_team_close_button")';
+  }
   public get btnExpand() {
     return $(
       'android=new UiSelector().resourceId("com.dazn:id/watch_party_toggle")'
     );
   }
   public get txtChat() {
-    return $('android=new UiSelector().resourceId("com.dazn:id/send_message")');
+    return 'android=new UiSelector().resourceId("com.dazn:id/send_message")';
   }
   public get btnSendMsg() {
     return $('android=new UiSelector().resourceId("com.dazn:id/send_button")');
@@ -52,17 +59,32 @@ class JoinFanzone {
     return $('android=new UiSelector().resourceId("com.dazn:id/giphy_button")');
   }
   public get txtSearchGif() {
-    return $('android=new UiSelector().resourceId("com.dazn:id/searchInput")');
+    return 'android=new UiSelector().resourceId("com.dazn:id/searchInput")';
   }
   public get firstGIF() {
     return $(
-      'android=new UiSelector().description("Media # 1 of 25 Football Sport GIF by ElevenSportsBE")'
+      '//android.widget.ImageView[contains(@content-desc, "Football Sport GIF")]'
     );
+  }
+
+  public async tapIfExists(selector: string) {
+    try {
+      const element = await $(selector); // or any other element
+      if ((await element.isExisting()) && (await element.isDisplayed())) {
+        await browser.pause(3000);
+        await element.click();
+        console.log("Element found and clicked.", selector);
+      } else {
+        console.log("Element exists but not visible.", selector);
+      }
+    } catch (error) {
+      console.log("Element not found, skipping.", selector);
+    }
   }
   public async searchEvent() {
     try {
       await this.btnSearch.click();
-      await this.txtEvent.setValue("ACL Cornhole");
+      await this.txtEvent.setValue(Config.eventName);
       await this.eventTile.click();
     } catch (error) {
       console.log("Error while joining event ", error);
@@ -75,48 +97,29 @@ class JoinFanzone {
       const textViews = await lastContainer.$$(`android.widget.TextView`);
       const messageTextView = textViews[2];
       const actualText = await messageTextView.getText();
-      console.log("Actual message ", actualText);
       return actualText;
     } catch (error) {
       console.log("Error while fetching sent message ", error);
     }
   }
-  public async searchGIF() {
-    await browser.pause(4000);
-    await this.txtSearchGif.waitForDisplayed({ timeout: 5000 });
-    const { x, y } = await this.txtSearchGif.getLocation();
-    const { height, width } = await this.txtSearchGif.getSize();
 
-    // swipe from lower part to upper part
-    await driver.performActions([
-      {
-        type: "pointer",
-        id: "finger1",
-        parameters: { pointerType: "touch" },
-        actions: [
-          {
-            type: "pointerMove",
-            duration: 0,
-            x: x + width / 2,
-            y: y + height * 0.8,
-          },
-          { type: "pointerDown", button: 0 },
-          { type: "pause", duration: 200 },
-          {
-            type: "pointerMove",
-            duration: 500,
-            x: x + width / 2,
-            y: y + height * 0.2,
-          },
-          { type: "pointerUp", button: 0 },
-        ],
-      },
-    ]);
-    await this.txtSearchGif.setValue("football");
+  public async sendGif() {
+    await $(this.txtSearchGif).setValue("football");
     await this.firstGIF.waitForDisplayed({ timeout: 5000 });
+    const expectedDesc = this.firstGIF.getAttribute("content-desc");
     await this.firstGIF.click();
-
-    await browser.pause(5000);
+    return expectedDesc;
+  }
+  public async gifValidate() {
+    try {
+      const msg = await this.allMessages;
+      const lastContainer = msg[(await msg.length) - 1];
+      const imgView = await lastContainer.$(`android.widget.ImageView`);
+      const gifDesc = await imgView.getAttribute("content-desc");
+      return gifDesc;
+    } catch (error) {
+      console.log("Error while fetching GIF description ", error);
+    }
   }
 }
 export default new JoinFanzone();

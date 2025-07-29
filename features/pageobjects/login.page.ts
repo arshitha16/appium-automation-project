@@ -1,5 +1,5 @@
 import { $ } from "@wdio/globals";
-
+import Config from "../../utils/config";
 class LoginPage {
   public get btnLogin() {
     return $(
@@ -33,28 +33,16 @@ class LoginPage {
   }
   public async daznLogin() {
     try {
-      await this.emailInput.setValue("arshitha.thallapally@dazn.com");
+      await this.btnLogin.waitForDisplayed({ timeout: 10000 });
+      await this.btnLogin.click();
+      await this.emailInput.waitForDisplayed({ timeout: 5000 });
+      await this.emailInput.setValue(Config.email);
       await this.btnNext.click();
-      await this.passwordInput.setValue("DAZNash2023");
+      await this.passwordInput.setValue(Config.password);
       await this.login.click();
     } catch (error) {
       console.log("Error while logging in ", error);
     }
   }
-
-  // public async acceptCookies() {
-  //   try {
-  //     const btnAccept = await this.btnCookies;
-  //     const isVisible = await btnAccept.isDisplayed();
-  //     if (isVisible) {
-  //       btnAccept.click();
-  //       console.log("Cookies accepted");
-  //     } else {
-  //       console.log("Button not visible, skipping...");
-  //     }
-  //   } catch (error) {
-  //     console.log("Error occurred with cookies popup");
-  //   }
-  // }
 }
 export default new LoginPage();
